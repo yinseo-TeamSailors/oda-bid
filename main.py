@@ -112,12 +112,9 @@ def main():
     filtered = []
     new_items = []
     changed_items = []
-    imminent_items = []
-    review_required = []
     forced_passed = 0
     ai_passed = 0
     ai_rejected = 0
-    model_review = 0
     system_review = 0
     expired = 0
 
@@ -141,14 +138,8 @@ def main():
                 new_items.append(item)
             elif record_id in processed.changed_ids:
                 changed_items.append(item)
-            elif deadline_status(get_deadline(item), now) == "imminent":
-                imminent_items.append(item)
-        elif result.decision == "review":
-            review_required.append(item)
-            if result.source == "system":
-                system_review += 1
-            else:
-                model_review += 1
+        elif result.decision == "review" and result.source == "system":
+            system_review += 1
         else:
             ai_rejected += 1
 
@@ -161,12 +152,11 @@ def main():
         f"(강제 포함 {forced_passed}건, AI 통과 {ai_passed}건)\n"
         f"- 신규 알림: {len(new_items)}건\n"
         f"- 변경 알림: {len(changed_items)}건\n"
-        f"- 마감 임박: {len(imminent_items)}건\n"
         f"- AI 분류 제외: {ai_rejected}건\n"
-        f"- 마감 경과: {expired}건\n"
-        f"- 사람 검토 필요: {len(review_required)}건 "
-        f"(모델 보류 {model_review}건, 시스템 오류 {system_review}건)"
+        f"- 마감 경과: {expired}건"
     )
+    if system_review:
+        summary_text += f"\n- 처리 오류: {system_review}건"
     send_discord(
         webhook_url,
         content=f"ODA 입찰공고 알림(일일 요약)\n{summary_text}",
@@ -174,9 +164,7 @@ def main():
 
     send_items(webhook_url, new_items, "신규 ODA 입찰공고")
     send_items(webhook_url, changed_items, "변경된 ODA 입찰공고")
-    send_items(webhook_url, imminent_items, "마감 임박 ODA 입찰공고")
-    send_items(webhook_url, review_required, "사람 검토 필요 공고", review=True)
-    if not any((new_items, changed_items, imminent_items, review_required)):
+    if not any((new_items, changed_items)):
         send_discord(webhook_url, content="오늘은 새로 알릴 입찰공고가 없습니다.")
 
     history.save()
