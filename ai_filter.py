@@ -22,7 +22,7 @@ EXIMBANK_PATTERN = re.compile(
     r"수출입\s*은행|Korea\s*Eximbank|KEXIM", re.IGNORECASE
 )
 EDCF_PATTERN = re.compile(r"EDCF|대외경제협력기금", re.IGNORECASE)
-KSP_PATTERN = re.compile(r"KSP|경제발전경험", re.IGNORECASE)
+KSP_PATTERN = re.compile(r"(?<![A-Za-z])KSP(?![A-Za-z])|경제발전경험", re.IGNORECASE)
 SYSTEM_PROMPT = """
 너는 ODA 및 국제개발협력 컨설팅 기업의 입찰공고 분류기다.
 
