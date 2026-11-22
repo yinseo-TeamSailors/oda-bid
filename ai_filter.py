@@ -13,6 +13,7 @@ import requests
 DEEPSEEK_ENDPOINT = "https://api.deepseek.com/chat/completions"
 ALLOWED_DECISIONS = {"pass", "reject", "review"}
 CLASSIFIER_VERSION = 2
+REVIEW_POLICY_VERSION = 1
 
 MANDATORY_PATTERNS = {
     "KOICA": re.compile(r"KOICA|한국국제협력단", re.IGNORECASE),
@@ -40,7 +41,12 @@ SYSTEM_PROMPT = """
 
 [D. 동음이의어·국내 지명·일반명사 오인] 인도(보행로), 가나(출판사·식품), 차드(인명) 등 개발도상국명이 아닌 용례
 
-즉시 탈락 기준에 해당하지 않지만 관련성이 불명확하면 review로 분류
+판별 순서:
+1. ODA·국제개발협력과 무관한 국내 공고인지 먼저 확인하고, 무관하면 review가 아니라 reject로 분류
+2. 개발도상국 국가명이나 도시명이 있어도 내용이 국내 지자체·국내 행정·국내 행사·국내 일반 용역이면 reject로 분류
+3. 위 즉시 탈락 기준을 적용
+4. review는 ODA·국제개발협력 관련성이 확인되지만 회사의 수주 대상인지 불명확한 경우에만 사용
+5. 단순히 정보가 부족하거나 제목만 애매하다는 이유로 review를 사용하지 마라. ODA 관련성 자체가 불명확하면 reject로 분류
 
 반드시 다음 JSON 객체 형식으로만 응답하고, 입력된 모든 공고를 정확히 한 번씩 반환
 

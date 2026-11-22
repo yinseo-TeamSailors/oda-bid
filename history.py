@@ -7,7 +7,12 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from ai_filter import CLASSIFIER_VERSION, Classification, classify_candidates
+from ai_filter import (
+    CLASSIFIER_VERSION,
+    REVIEW_POLICY_VERSION,
+    Classification,
+    classify_candidates,
+)
 
 KST = timezone(timedelta(hours=9))
 DEFAULT_HISTORY_PATH = "data/bid_history.json"
@@ -114,7 +119,13 @@ class BidHistory:
                 previous
                 and previous.get("classification_signature") == signature
                 and previous.get("source") == "deepseek"
-                and previous.get("decision") in {"pass", "reject", "review"}
+                and (
+                    previous.get("decision") in {"pass", "reject"}
+                    or (
+                        previous.get("decision") == "review"
+                        and previous.get("review_policy_version") == REVIEW_POLICY_VERSION
+                    )
+                )
             ):
                 results[record_id] = Classification(
                     previous["decision"], previous.get("reason", ""), "deepseek"
@@ -154,6 +165,11 @@ class BidHistory:
                 "decision": result.decision,
                 "reason": result.reason,
                 "source": result.source,
+                "review_policy_version": (
+                    REVIEW_POLICY_VERSION
+                    if result.decision == "review" and result.source == "deepseek"
+                    else None
+                ),
                 "data": raw_item,
             }
 
