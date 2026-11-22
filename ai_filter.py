@@ -22,6 +22,7 @@ EXIMBANK_PATTERN = re.compile(
     r"수출입\s*은행|Korea\s*Eximbank|KEXIM", re.IGNORECASE
 )
 EDCF_PATTERN = re.compile(r"EDCF|대외경제협력기금", re.IGNORECASE)
+KSP_PATTERN = re.compile(r"KSP|경제발전경험", re.IGNORECASE)
 SYSTEM_PROMPT = """
 너는 ODA 및 국제개발협력 컨설팅 기업의 입찰공고 분류기다.
 
@@ -83,6 +84,8 @@ def make_candidate_id(*parts: object) -> str:
 
 
 def mandatory_inclusion_reason(title: str, org: str) -> str | None:
+    if KSP_PATTERN.search(title):
+        return "[강제 포함] 입찰명에 KSP·경제발전경험 포함"
     search_text = f"{title} {org}"
     for name, pattern in MANDATORY_PATTERNS.items():
         if pattern.search(search_text):

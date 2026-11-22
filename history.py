@@ -135,6 +135,12 @@ class BidHistory:
                 )
                 results[record_id] = result
 
+            if previous and (
+                previous.get("decision") != result.decision
+                or previous.get("source") != result.source
+            ):
+                changed_ids.add(record_id)
+
             raw_item = {
                 key: value for key, value in candidate["item"].items()
                 if not key.startswith("_")
