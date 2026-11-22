@@ -111,7 +111,6 @@ def main():
     results = classify_candidates(candidates)
     review_required = []
     ai_passed = 0
-    rule_rejected = 0
     ai_rejected = 0
     model_review = 0
     system_review = 0
@@ -135,8 +134,6 @@ def main():
                 system_review += 1
             else:
                 model_review += 1
-        elif result.source == "rule":
-            rule_rejected += 1
         else:
             ai_rejected += 1
 
@@ -147,7 +144,7 @@ def main():
         f"- 전체 공고: {len(items)}건\n"
         f"- 강제 포함(KOICA·KOFIH·EDCF): {len(filtered) - ai_passed}건\n"
         f"- AI 분류 통과: {ai_passed}건\n"
-        f"- 조건 미충족: 규칙 {rule_rejected}건, AI {ai_rejected}건\n"
+        f"- AI 분류 제외: {ai_rejected}건\n"
         f"- 사람 검토 필요: {len(review_required)}건 "
         f"(모델 보류 {model_review}건, 시스템 오류 {system_review}건)"
     )

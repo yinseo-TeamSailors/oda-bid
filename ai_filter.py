@@ -21,31 +21,6 @@ EXIMBANK_PATTERN = re.compile(
     r"수출입\s*은행|Korea\s*Eximbank|KEXIM", re.IGNORECASE
 )
 EDCF_PATTERN = re.compile(r"EDCF|대외경제협력기금", re.IGNORECASE)
-HARD_EXCLUDE_PATTERN = re.compile(
-    "|".join(
-        map(
-            re.escape,
-            [
-                "차량 임차",
-                "차량임차",
-                "렌터카",
-                "항공권 구매",
-                "비자 발급",
-                "비자발급",
-                "구내식당",
-                "경비용역",
-                "청소용역",
-                "단체 보험",
-                "도로포장",
-                "가구 제작",
-                "사무용품",
-                "차량 공급",
-                "버스 공급",
-            ],
-        )
-    )
-)
-
 SYSTEM_PROMPT = """
 너는 ODA 및 국제개발협력 컨설팅 기업의 입찰공고 분류기다.
 
@@ -55,15 +30,10 @@ SYSTEM_PROMPT = """
 - ODA 사업 수행(PMC), 개도국 역량강화, 초청연수
 - 개도국 대상 정보시스템, 소프트웨어, 플랫폼 구축
 
-제외 대상:
-- 단순 물품·기자재·가구·차량 공급 및 건축·토목·도로·조경 공사
-- 채용·렌터카·항공권·비자·보험 등 단순 행정 지원
-- 국내 행사·전시·문화·체육 용역 및 시스템 감리
-- 국제기구나 개발도상국 명칭이 있어도 내용이 국내 행정·운영인 사업
-- 인도(보행로)처럼 국가명이 일반 명사로 사용된 사업
-
-기관명이나 국가명만으로 통과시키지 마라. 각 공고를 독립적으로 판별하라.
-제목·수요기관·추가 설명만으로 수주 대상 여부가 불명확하면 review로 분류하라.
+위 예시에 없더라도 ODA·국제개발협력과 관련된 용역은 검토하라.
+물품, 시설, 행정, 운영, 행사, 전시, 문화, 체육, 교류, 연수 등 특정 업무 유형만으로 즉시 배제하지 마라.
+기관명이나 국가명만으로 통과시키지 말고 각 공고를 독립적으로 판별하라.
+제목·수요기관·추가 설명만으로 관련성이나 수주 가능성이 불명확하면 review로 분류하라.
 반드시 다음 JSON 객체 형식으로만 응답하고, 입력된 모든 공고를 정확히 한 번씩 반환하라.
 {"results":[{"id":"입력된 공고 ID","decision":"pass | reject | review","reason":"40자 이내 구체적 근거"}]}
 """.strip()
@@ -94,13 +64,6 @@ def mandatory_inclusion_reason(title: str, org: str) -> str | None:
             return f"[강제 포함] {name} 관련 공고"
     if EXIMBANK_PATTERN.search(search_text) and EDCF_PATTERN.search(search_text):
         return "[강제 포함] 수출입은행 EDCF 관련 공고"
-    return None
-
-
-def _hard_exclusion_reason(title: str) -> str | None:
-    match = HARD_EXCLUDE_PATTERN.search(title)
-    if match:
-        return f"[규칙 제외] {match.group(0)}"
     return None
 
 
@@ -247,14 +210,7 @@ def _classify_batch_with_recovery(batch: list[dict]) -> dict[str, Classification
 
 def classify_candidates(candidates: list[dict]) -> dict[str, Classification]:
     results = {}
-    pending = []
-
-    for item in candidates:
-        exclusion = _hard_exclusion_reason(item["title"])
-        if exclusion:
-            results[item["id"]] = Classification("reject", exclusion, "rule")
-        else:
-            pending.append(item)
+    pending = list(candidates)
 
     batch_size = _positive_int_env("ODA_BATCH_SIZE", 10, 20)
     max_workers = _positive_int_env("ODA_MAX_WORKERS", 1, 2)
