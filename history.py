@@ -7,7 +7,12 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from ai_filter import CLASSIFIER_VERSION, Classification, classify_candidates
+from ai_filter import (
+    CLASSIFIER_VERSION,
+    Classification,
+    classify_candidates,
+    rule_based_classification,
+)
 
 KST = timezone(timedelta(hours=9))
 DEFAULT_HISTORY_PATH = "data/bid_history.json"
@@ -108,6 +113,11 @@ class BidHistory:
                 results[record_id] = Classification(
                     "pass", candidate["mandatory_reason"], "mandatory"
                 )
+                continue
+
+            rule_result = rule_based_classification(candidate["title"], candidate["org"])
+            if rule_result:
+                results[record_id] = rule_result
                 continue
 
             if (

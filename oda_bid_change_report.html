@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ODA 입찰 알림 봇 개선 리포트</title>
+  <style>
+    :root {
+      --navy: #102a43;
+      --blue: #2563eb;
+      --blue-light: #eff6ff;
+      --green: #047857;
+      --green-light: #ecfdf5;
+      --purple: #7c3aed;
+      --purple-light: #f5f3ff;
+      --orange: #c2410c;
+      --text: #243b53;
+      --muted: #627d98;
+      --line: #d9e2ec;
+      --surface: #ffffff;
+      --background: #f4f7fb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background: var(--background);
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      line-height: 1.65;
+    }
+    .container { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
+    header {
+      color: white;
+      background: linear-gradient(125deg, #102a43 0%, #173f6d 58%, #2563eb 100%);
+      padding: 64px 0 52px;
+    }
+    .eyebrow { font-size: 13px; font-weight: 700; letter-spacing: .12em; opacity: .75; }
+    h1 { margin: 12px 0 14px; font-size: clamp(30px, 5vw, 48px); line-height: 1.2; }
+    header p { max-width: 760px; margin: 0; color: #d9eaff; font-size: 17px; }
+    .meta { margin-top: 24px; font-size: 13px; color: #bcd4f6; }
+    main { padding: 36px 0 64px; }
+    section { margin-top: 36px; }
+    h2 { margin: 0 0 18px; color: var(--navy); font-size: 25px; line-height: 1.35; }
+    h3 { color: var(--navy); }
+    .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .card {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--surface);
+      box-shadow: 0 5px 20px rgba(16, 42, 67, .04);
+    }
+    .metric { display: block; color: var(--blue); font-size: 30px; font-weight: 800; line-height: 1.2; }
+    .metric-label { display: block; margin-top: 6px; color: var(--muted); font-size: 13px; }
+    .comparison { overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: white; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 15px 18px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--navy); background: #f0f4f8; font-size: 13px; }
+    th:nth-child(1) { width: 18%; }
+    th:nth-child(2), th:nth-child(3) { width: 41%; }
+    tr:last-child td { border-bottom: 0; }
+    td:first-child { color: var(--navy); font-weight: 700; }
+    td:nth-child(2) { color: #6b7280; }
+    td:nth-child(3) { color: #173f6d; font-weight: 600; }
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      color: var(--green);
+      background: var(--green-light);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+    .flow-step {
+      position: relative;
+      padding: 20px 16px;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      background: var(--blue-light);
+      text-align: center;
+    }
+    .flow-step:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      right: -20px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--blue);
+      font-size: 22px;
+      font-weight: 700;
+    }
+    .flow-step strong { display: block; color: var(--navy); }
+    .flow-step span { display: block; margin-top: 6px; color: var(--muted); font-size: 13px; }
+    .two-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .list { margin: 0; padding-left: 21px; }
+    .list li { margin: 8px 0; }
+    .mandatory { border-left: 4px solid var(--green); }
+    .filtering { border-left: 4px solid var(--purple); }
+    .channel-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .channel { text-align: center; border-top: 5px solid var(--purple); }
+    .channel.prebid { border-color: #10b981; }
+    .channel.bid { border-color: #3b82f6; }
+    .channel strong { display: block; color: var(--navy); font-size: 20px; }
+    .channel code { display: block; margin-top: 12px; color: var(--muted); font-size: 11px; word-break: break-all; }
+    .result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .result { text-align: center; }
+    .result strong { display: block; color: var(--blue); font-size: 30px; }
+    .note {
+      padding: 18px 20px;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      background: var(--blue-light);
+    }
+    .small { color: var(--muted); font-size: 13px; }
+    code { font-family: "SFMono-Regular", Consolas, monospace; }
+    a { color: var(--blue); }
+    footer { padding: 24px 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+    @media (max-width: 850px) {
+      .cards { grid-template-columns: repeat(2, 1fr); }
+      .flow { grid-template-columns: 1fr; gap: 12px; }
+      .flow-step:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -25px; transform: translateX(50%); }
+      .two-columns, .channel-grid, .result-grid { grid-template-columns: 1fr; }
+      .comparison { overflow-x: auto; }
+      table { min-width: 720px; }
+    }
+    @media (max-width: 480px) {
+      .container { width: min(100% - 24px, 1120px); }
+      header { padding: 40px 0 36px; }
+      .cards { grid-template-columns: 1fr; }
+    }
+    @media print {
+      body { background: white; }
+      header { color: var(--navy); background: white; padding: 20px 0; }
+      header p, .meta { color: var(--muted); }
+      .card, .comparison { box-shadow: none; break-inside: avoid; }
+      section { break-inside: avoid; }
+      a { color: var(--navy); text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <div class="eyebrow">ODA BID FINDER · CHANGE REPORT</div>
+      <h1>ODA 입찰 알림 봇<br>개선 리포트</h1>
+      <p>원본 <strong>(old)oda-bid-main</strong>에서 현재 <strong>yinseo-TeamSailors/oda-bid</strong>까지의 기능·정확성·운영 방식 변화를 정리한 문서입니다.</p>
+      <div class="meta">작성일: 2026-11-23 · 원본 기준 커밋: 61cc0c7 · 문서에 API 키와 웹후크 주소는 포함하지 않음</div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section>
+      <h2>핵심 변화 한눈에 보기</h2>
+      <div class="cards">
+        <div class="card"><span class="metric">2 → 3</span><span class="metric-label">발주계획 트랙 추가</span></div>
+        <div class="card"><span class="metric">24시간</span><span class="metric-label">현재 수집 조회기간</span></div>
+        <div class="card"><span class="metric">건별 → 10건</span><span class="metric-label">DeepSeek 배치 분류</span></div>
+        <div class="card"><span class="metric">1 → 3</span><span class="metric-label">Discord 채널과 웹후크</span></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>원본과 현재 버전 비교</h2>
+      <div class="comparison">
+        <table>
+          <thead>
+            <tr><th>영역</th><th>원본 (old)oda-bid-main</th><th>현재 버전</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>수집 범위</td>
+              <td>본공고와 사전규격공고 2개 트랙</td>
+              <td><span class="tag">확장</span> 용역 발주계획·사전공고·본공고 3개 트랙</td>
+            </tr>
+            <tr>
+              <td>조회기간</td>
+              <td>실행 시점 기준 최근 24시간</td>
+              <td>최근 24시간. 본공고는 API 제한에 따라 2일씩 나누고 경계 중복 제거</td>
+            </tr>
+            <tr>
+              <td>수집 오류</td>
+              <td>재시도 실패 시 빈 목록을 반환해 정상 0건처럼 보일 수 있음</td>
+              <td>응답 코드·건수·페이지 누락을 검증하고 장애 알림과 Actions 실패로 처리</td>
+            </tr>
+            <tr>
+              <td>AI 모델</td>
+              <td>Gemini 2.0 Flash 우선, DeepSeek Chat 예비 모델</td>
+              <td>DeepSeek Flash 단일 주력. 추론 모드 비활성화</td>
+            </tr>
+            <tr>
+              <td>AI 호출</td>
+              <td>후보 공고를 각각 순차 호출하고 공통 프롬프트를 반복 전송</td>
+              <td>10건씩 배치 호출. 기본 동시 호출 1개, 필요 시 최대 2개</td>
+            </tr>
+            <tr>
+              <td>응답 처리</td>
+              <td>응답 문자열에서 중괄호를 찾아 JSON 파싱</td>
+              <td>JSON Output 강제. ID·중복·누락·판별값 검증 후 누락 건 만 재요청</td>
+            </tr>
+            <tr>
+              <td>AI 판별값</td>
+              <td>키워드 통과와 LLM 판별이 혼재</td>
+              <td><code>pass</code>·<code>reject</code> 두 값으로 단순화. ODA·국제개발협력·개도국 관련 공고만 통과</td>
+            </tr>
+            <tr>
+              <td>필수 사업</td>
+              <td>핵심 키워드가 있으면 무조건 통과</td>
+              <td>KSP·경제발전경험, KOICA·KOFIH, 수출입은행 EDCF를 명시적 강제 포함. KSPO 오인 방지</td>
+            </tr>
+            <tr>
+              <td>후보 발굴</td>
+              <td>제목 중심의 기관·국가·업무 키워드</td>
+              <td>제목·사업명·기관·용도·규격을 검색하고 개도국 주요 도시명도 후보로 포함</td>
+            </tr>
+            <tr>
+              <td>이력 관리</td>
+              <td>없음. 재실행하면 같은 공고를 다시 분류하고 알릴 수 있음</td>
+              <td><code>data/bid_history.json</code>에 원문과 판별 결과를 저장하고 AI 결과 재사용</td>
+            </tr>
+            <tr>
+              <td>알림 기준</td>
+              <td>조건에 맞는 공고를 실행할 때마다 전송</td>
+              <td>신규 또는 변경된 관련 공고만 상세 전송. 마감 임박·사람 검토 알림 없음</td>
+            </tr>
+            <tr>
+              <td>Discord</td>
+              <td>한 채널·한 웹후크에 모든 공고를 게시</td>
+              <td>발주계획·사전공고·본공고 채널과 웹후크를 각각 분리</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>현재 처리 흐름</h2>
+      <div class="flow">
+        <div class="flow-step"><strong>24시간 수집</strong><span>발주계획·사전공고·본공고</span></div>
+        <div class="flow-step"><strong>후보 추출</strong><span>기관·국가·도시·사업명</span></div>
+        <div class="flow-step"><strong>AI 배치 분류</strong><span>DeepSeek Flash · 10건씩</span></div>
+        <div class="flow-step"><strong>이력 비교</strong><span>신규·변경 여부 판단</span></div>
+        <div class="flow-step"><strong>채널별 알림</strong><span>관련 공고만 Discord 게시</span></div>
+      </div>
+    </section>
+
+    <section class="two-columns">
+      <div class="card mandatory">
+        <h3>무조건 포함하는 공고</h3>
+        <ul class="list">
+          <li>입찰명에 독립된 <strong>KSP</strong> 약어 또는 <strong>경제발전경험</strong> 포함</li>
+          <li>KOICA·한국국제협력단 공고</li>
+          <li>KOFIH·한국국제보건의료재단 공고</li>
+          <li>수출입은행 공고 중 EDCF·대외경제협력기금 관련 공고</li>
+        </ul>
+        <p class="small">강제 포함은 AI보다 먼저 적용되며 AI 호출 비용이 발생하지 않습니다.</p>
+      </div>
+      <div class="card filtering">
+        <h3>후보와 제외 판별</h3>
+        <ul class="list">
+          <li>ODA 표현이 없어도 개도국 국가·도시명이 있으면 AI 후보로 검토</li>
+          <li>무관한 국내 공고, 국가명의 일반 명사 사용, 제외 기준 해당 공고는 제외</li>
+          <li>관련성이 불명확한 공고는 관련 공고로 통과시키지 않음</li>
+          <li>본공고와 사전공고는 마감 후 상세 알림에서 제외</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <h2>Discord 사용성 개선</h2>
+      <div class="channel-grid">
+        <div class="card channel">
+          <strong>발주계획</strong>
+          <span>사업 발굴 단계의 용역 계획</span>
+          <code>DISCORD_WEBHOOK_URL_ORDER_PLAN</code>
+        </div>
+        <div class="card channel prebid">
+          <strong>사전공고</strong>
+          <span>사전규격공고와 변경 사항</span>
+          <code>DISCORD_WEBHOOK_URL_PREBID</code>
+        </div>
+        <div class="card channel bid">
+          <strong>본공고</strong>
+          <span>실제 입찰 대응 대상</span>
+          <code>DISCORD_WEBHOOK_URL_BID</code>
+        </div>
+      </div>
+      <p class="small">각 채널은 독립 웹후크를 사용하며, AI 규칙과 공고 이력은 세 트랙이 공유합니다.</p>
+    </section>
+
+    <section>
+      <h2>실제 실행으로 확인한 결과</h2>
+      <div class="result-grid">
+        <div class="card result"><strong>901건</strong><span>최근 3일 본공고 수집</span></div>
+        <div class="card result"><strong>504건</strong><span>최근 3일 사전공고 수집</span></div>
+        <div class="card result"><strong>549건</strong><span>최근 3일 용역 발주계획 수집</span></div>
+      </div>
+      <div class="note" style="margin-top: 18px;">
+        GitHub Actions 실행 <strong>#45037618914</strong> 성공. DeepSeek·나라장터 수집·Discord 전송 오류가 없었고, 세 Discord 채널에서 각각의 요약 메시지를 확인했습니다. 이력은 <code>[skip ci]</code> 자동 커밋으로 저장되어 순환 실행을 방지합니다.
+      </div>
+      <p class="small"><a href="https://github.com/yinseo-TeamSailors/oda-bid/actions/runs/45037618914">실제 Actions 실행 결과 보기</a></p>
+    </section>
+
+    <section>
+      <h2>주요 코드 변화</h2>
+      <div class="comparison">
+        <table>
+          <thead><tr><th>파일</th><th>역할</th><th>현재 역할</th></tr></thead>
+          <tbody>
+            <tr><td><code>g2b.py</code></td><td>나라장터 조회</td><td>3개 API 수집, 기간 분할, 페이지·건수 검증</td></tr>
+            <tr><td><code>ai_filter.py</code></td><td>AI 필터</td><td>DeepSeek 배치, JSON 검증, 강제 포함, 누락 복구</td></tr>
+            <tr><td><code>history.py</code></td><td>없었음</td><td>신규·변경 판단, 이력 저장, AI 결과 재사용</td></tr>
+            <tr><td><code>main_order_plan.py</code></td><td>없었음</td><td>용역 발주계획 수집과 전용 채널 알림</td></tr>
+            <tr><td><code>main.py</code><br><code>main_pre.py</code></td><td>본공고·사전공고 알림</td><td>이력 기반 신규·변경 알림과 전용 웹후크 사용</td></tr>
+            <tr><td><code>discord_notify.py</code></td><td>웹후크 전송</td><td>Discord 429·5xx 재시도 추가</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small">이력 데이터를 제외한 원본 대비 변경 규모: 10개 파일, 1,163줄 추가, 569줄 삭제.</p>
+    </section>
+
+    <section>
+      <h2>운영 요약</h2>
+      <div class="card">
+        <ul class="list">
+          <li>매일 08:30 KST에 GitHub Actions로 자동 실행하며 DeepSeek 오프피크 시간을 이용합니다.</li>
+          <li>이력은 21일이 지난 항목부터 정리하고, 조회 범위는 최근 3일입니다.</li>
+          <li>수집 실패와 정상적인 0건을 구분하고 Discord 전송 오류도 재시도합니다.</li>
+          <li>채널 분리 후에도 기존 이력이 유지되어 과거 공고가 다시 쏟아지지 않습니다.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">ODA 입찰 알림 봇 · 원본과 현재 버전 비교 문서 · 저장소: yinseo-TeamSailors/oda-bid</div>
+  </footer>
+</body>
+</html>

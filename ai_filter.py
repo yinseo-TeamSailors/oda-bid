@@ -12,7 +12,7 @@ import requests
 
 DEEPSEEK_ENDPOINT = "https://api.deepseek.com/chat/completions"
 ALLOWED_DECISIONS = {"pass", "reject"}
-CLASSIFIER_VERSION = 2
+CLASSIFIER_VERSION = 3
 
 MANDATORY_PATTERNS = {
     "KOICA": re.compile(r"KOICA|한국국제협력단", re.IGNORECASE),
@@ -23,32 +23,78 @@ EXIMBANK_PATTERN = re.compile(
 )
 EDCF_PATTERN = re.compile(r"EDCF|대외경제협력기금", re.IGNORECASE)
 KSP_PATTERN = re.compile(r"(?<![A-Za-z])KSP(?![A-Za-z])|경제발전경험", re.IGNORECASE)
+
+EXCLUDE_KEYWORDS = [
+    "유지보수", "정비사업", "도로포장", "CCTV", "청사", "사무용품",
+    "박람회", "전시회", "보행로 정비", "조경", "방역", "경비용역", "폐기물",
+    "인도 및 차도", "자격시험", "도배", "건강검진", "차량 임차", "구내식당",
+    "기자재 공급", "기자재 도입", "기자재 구매", "가구 제작", "시스템 감리",
+    "감리 용역", "건축물 개보수", "버스 공급", "항공권", "보험 공급자", "단체 보험",
+    "비자 발급", "비자발급", "임직원", "하자소송", "법률대리", "변호사 선임",
+    "체육시설", "재외동포", "차세대동포", "해양법", "모국 초청", "채용 대행",
+    "신규 채용", "렌터카", "행사 대행", "개막식", "전시물 제작", "세계기록유산",
+    "인류무형유산", "달력", "정수기", "스포츠시설", "교량", "여행자보험", "대관 용역",
+]
+EXCLUDE_PATTERN = re.compile("|".join(map(re.escape, EXCLUDE_KEYWORDS)), re.IGNORECASE)
+CORE_PATTERN = re.compile(
+    r"(?<![A-Za-z])ODA(?![A-Za-z])|공적개발원조|국제개발협력|개발협력|"
+    r"무상원조|유상원조|(?<![가-힣])수원국(?![가-힣])|"
+    r"형성조사|종료평가|(?<![A-Za-z])PMC(?![A-Za-z])|대외경제협력기금|다자개발은행|세계은행|"
+    r"아시아개발은행|아프리카개발은행|미주개발은행|아시아인프라투자은행",
+    re.IGNORECASE,
+)
+
 SYSTEM_PROMPT = """
+너는 ODA 및 국제개발협력 컨설팅 기업의 입찰공고 분류기다.
 
 수주 대상:
-- 개발도상국을 대상으로 하는 ODA 사업의 기획, 조사, 평가, 연구, 성과관리, 모니터링, 사업관리(PMC), 역량강화, 초청연수, 정보시스템, 컨설팅 등
+- ODA 사업의 기획·조사·평가·연구·성과관리·모니터링
+- 형성조사, 타당성조사, 심층조사, 기획조사, 마스터플랜, 로드맵
+- ODA 사업 수행(PMC), 개도국 역량강화, 초청연수
+- 개도국 대상 정보시스템, 소프트웨어, 플랫폼 구축
 
-아래 즉시 탈락 기준에 하나라도 해당하면 무조건 reject
+합격 예시:
+- 라오스 암 검진 역량강화 형성조사
+- 우크라이나 공항 마스터플랜
+- 다지역 유사 ODA 사업 평가
+- 탄자니아 지적DB 플랫폼 구축
+- 국제협력센터 초청연수 운영 대행
+
+아래 즉시 탈락 기준에 하나라도 해당하면 무조건 reject하라.
 
 [A. 하드웨어·물품·시설]
-기자재, 물품, 가구 공급, 전시물 제작·설치, 버스·차량 공급, 건축물 신축·개보수, 토목·도로·포장·조경 공사, 시스템 감리 용역
+기자재·물품·가구 공급, 전시물 제작·설치, 버스·차량 공급, 건축물 신축·개보수,
+토목·도로·포장·조경 공사, 시스템 감리 용역
 
-[B. 단순 용역]
-채용 대행, 렌터카·차량 임차, 항공권 구매, 비자 발급 대행, 보험 공급자 선정, 시설 위탁운영, 구내식당, 경비, 방역 용역
+[B. 단순 행정·운영 지원]
+채용 대행, 렌터카·차량 임차, 항공권 구매, 비자 발급 대행, 보험 공급자 선정,
+변호사 선임·하자소송, 시설 위탁운영, 구내식당, 경비·방역 용역
 
-[C. 국내 용역] 개발도상국이 아닌 국내의 각종 업무 위탁 용역
+[C. 국내 행사·전시·문화·체육 용역]
+국내 전시 기획·연출, 전시물 제작·설치, 국내 기념행사·특별전 운영,
+개막식·부대행사 운영, 학술토론회·포럼 단순 행사대행, 스포츠 대회 운영
 
-[D. 동음이의어·국내 지명·일반명사 오인] 인도(보행로), 가나(출판사·식품), 차드(인명) 등 개발도상국명이 아닌 용례
+[D. 국제기구 명칭을 쓴 국내 사업]
+유네스코 세계기록유산·인류무형유산 등재 신청·전략 수립, 유네스코 창의도시 행사,
+유네스코 생태탐방로 조성, 유니세프·WHO 국내 캠페인 등 국내 행정·운영 사업
+
+[E. 비ODA 목적 교류·연수]
+재외동포·차세대동포 모국 초청, 해양법 교육, 특정 직군 단순 해외연수,
+ODA 컨설팅과 무관한 단발성 교류 행사
+
+[F. 동음이의어·국내 지명·일반명사 오인]
+인도(보행로), 가나(출판사·식품), 차드(인명) 등 개발도상국명이 아닌 용례,
+국내 지자체 사업에 국가명이 우연히 포함된 경우
 
 판별 순서:
 1. ODA·국제개발협력 또는 개발도상국과 관련된 공고만 pass로 분류
-2. ODA와 무관한 국내 공고는 reject로 분류
-3. 개발도상국 국가명이나 도시명이 있어도 내용이 국내 지자체·국내 행정·국내 행사·국내 일반 용역이면 reject로 분류
-4. 위 즉시 탈락 기준을 적용
+2. 위 즉시 탈락 기준을 확인하고 해당하면 reject로 분류
+3. ODA와 무관한 국내 공고는 reject로 분류
+4. 국가명이나 도시명이 있어도 내용이 국내 사업이면 reject로 분류
 5. 정보가 부족하거나 관련성이 불명확하면 reject로 분류
 
-반드시 다음 JSON 객체 형식으로만 응답하고, 입력된 모든 공고를 정확히 한 번씩 반환
-
+기관명이나 국가명만으로 통과시키지 말고 각 공고를 독립적으로 판별하라.
+반드시 다음 JSON 객체 형식으로만 응답하고, 입력된 모든 공고를 정확히 한 번씩 반환하라.
 {"results":[{"id":"입력된 공고 ID","decision":"pass | reject","reason":"40자 이내 구체적 근거"}]}
 """.strip()
 
@@ -80,6 +126,20 @@ def mandatory_inclusion_reason(title: str, org: str) -> str | None:
             return f"[강제 포함] {name} 관련 공고"
     if EXIMBANK_PATTERN.search(search_text) and EDCF_PATTERN.search(search_text):
         return "[강제 포함] 수출입은행 EDCF 관련 공고"
+    return None
+
+
+def rule_based_classification(title: str, org: str) -> Classification | None:
+    exclusion = EXCLUDE_PATTERN.search(title)
+    if exclusion:
+        return Classification(
+            "reject", f"[규칙 제외] {exclusion.group(0)}", "rule"
+        )
+    core = CORE_PATTERN.search(f"{title} {org}")
+    if core:
+        return Classification(
+            "pass", f"[ODA 핵심 규칙] {core.group(0)}", "rule"
+        )
     return None
 
 
@@ -226,7 +286,13 @@ def _classify_batch_with_recovery(batch: list[dict]) -> dict[str, Classification
 
 def classify_candidates(candidates: list[dict]) -> dict[str, Classification]:
     results = {}
-    pending = list(candidates)
+    pending = []
+    for item in candidates:
+        rule_result = rule_based_classification(item["title"], item["org"])
+        if rule_result:
+            results[item["id"]] = rule_result
+        else:
+            pending.append(item)
 
     batch_size = _positive_int_env("ODA_BATCH_SIZE", 10, 20)
     max_workers = _positive_int_env("ODA_MAX_WORKERS", 1, 2)

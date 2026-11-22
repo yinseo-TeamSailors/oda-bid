@@ -252001,7 +252001,7 @@
       "track": "bid"
     },
     "bid:R26BK01843726-000": {
-      "classification_signature": "18582214dda2fc6aa49913527ad4c4a11af558d69c588d2915ba9b7a36eee624",
+      "classification_signature": "71a38876fd9b4a1daa30c3b32e0a55722e836f2a30af3f638fb081d956b1fdc3",
       "data": {
         "VAT": "105590909",
         "arsltApplDocRcptMthdNm": "",
@@ -252121,8 +252121,8 @@
       "data_hash": "7bc8fe96a91420a830aed71d97c17a13f686b4f2e1a8f9ec6d6c13010ca530b1",
       "decision": "reject",
       "first_seen": "2026-11-22T22:36:56.129088+09:00",
-      "last_seen": "2026-11-23T00:19:10.513845+09:00",
-      "reason": "국내 지자체 데이터플랫폼 구축용역, ODA 무관",
+      "last_seen": "2026-11-23T01:46:05.074915+09:00",
+      "reason": "국내 지자체 데이터플랫폼 구축, ODA 무관",
       "source": "deepseek",
       "track": "bid"
     },
@@ -346406,7 +346406,7 @@
       "track": "order"
     },
     "order:R26DD20939787-0": {
-      "classification_signature": "da01d252d2978af89e620866c90b8abba20d947f0574eb762159f107b81e100f",
+      "classification_signature": "9c4715eb4c91ae072d0170c22f9d192767367649bcec45678c5e4487e5910799",
       "data": {
         "agrmntYn": "N",
         "atchFileExistnceYn": "N",
@@ -346471,13 +346471,13 @@
       "data_hash": "fe761e10cf5a81cb0d3b8cf33573f24222a2943a3137c6412e4a472aa00b295f",
       "decision": "reject",
       "first_seen": "2026-11-22T22:48:10.436308+09:00",
-      "last_seen": "2026-11-23T00:19:25.386690+09:00",
-      "reason": "국내 하수처리 연계 폐기물처리 용역",
-      "source": "deepseek",
+      "last_seen": "2026-11-23T01:53:10.240735+09:00",
+      "reason": "[규칙 제외] 폐기물",
+      "source": "rule",
       "track": "order"
     },
     "order:R26DD20939790-0": {
-      "classification_signature": "8c2715d0d1cb739c1ba81fcbc852dbeb32507c7e8781176a3533409cad148450",
+      "classification_signature": "4febc649462841360c60ece7b0a12c0a724205e7d10e07bf2ebedd7878448055",
       "data": {
         "agrmntYn": "N",
         "atchFileExistnceYn": "N",
@@ -346542,13 +346542,13 @@
       "data_hash": "68afd7ad8ea0ce80fec434abbcfd7b03d4bea7475d23012d05555f464c29ab97",
       "decision": "reject",
       "first_seen": "2026-11-22T22:48:10.436308+09:00",
-      "last_seen": "2026-11-23T00:19:25.386690+09:00",
-      "reason": "국내 하수처리시설 GIS DB구축 용역",
+      "last_seen": "2026-11-23T01:53:10.240735+09:00",
+      "reason": "국내 하수처리 GIS DB구축, ODA 무관",
       "source": "deepseek",
       "track": "order"
     },
     "order:R26DD20939792-0": {
-      "classification_signature": "e40a00f1f562fc238205a41936431446c6f8b906093ed8124fb9494868670977",
+      "classification_signature": "14c3721b8602f402643fc0c7c5bbc4a3201b41eb8ccdd229b7c3a60575febbdc",
       "data": {
         "agrmntYn": "N",
         "atchFileExistnceYn": "N",
@@ -346613,13 +346613,13 @@
       "data_hash": "37a7533dda5f1ae24f7c199bbe4fd1e8700687049b0779d1856b7fda4b16a9c1",
       "decision": "reject",
       "first_seen": "2026-11-22T22:48:10.436308+09:00",
-      "last_seen": "2026-11-23T00:19:25.386690+09:00",
-      "reason": "국내 상수도 GIS DB구축, ODA 무관",
+      "last_seen": "2026-11-23T01:53:10.240735+09:00",
+      "reason": "국내 상수도 GIS DB구축, 공사 성격 ODA 무관",
       "source": "deepseek",
       "track": "order"
     },
     "order:R26DD20939794-0": {
-      "classification_signature": "4cce0ea2515ed5304083adc773da9cae8edec1a8cf9f7ab65e8d606c633491cf",
+      "classification_signature": "ffd8719e0835c4cf406f325667715f130486f720c30d030b9087a24bd02c6b2d",
       "data": {
         "agrmntYn": "N",
         "atchFileExistnceYn": "N",
@@ -346684,13 +346684,13 @@
       "data_hash": "5beebdd9ffe7ff25b460a476db711c5c012838d8fa043c94a341ce2f0fa488ef",
       "decision": "reject",
       "first_seen": "2026-11-22T22:48:10.436308+09:00",
-      "last_seen": "2026-11-23T00:19:25.386690+09:00",
-      "reason": "국내 상수도 공사 폐기물처리 용역",
-      "source": "deepseek",
+      "last_seen": "2026-11-23T01:53:10.240735+09:00",
+      "reason": "[규칙 제외] 폐기물",
+      "source": "rule",
       "track": "order"
     },
     "order:R26DD20939806-0": {
-      "classification_signature": "e96c70f6a10ebe2c149e2f1991a76ce943f1a662ccdaeab5d55998f7558276bd",
+      "classification_signature": "bcff4555c2fdc9ceabb238f886e48d3d2fef0996e5ecde1bd5f12b1833dde77b",
       "data": {
         "agrmntYn": "N",
         "atchFileExistnceYn": "N",
@@ -346755,13 +346755,13 @@
       "data_hash": "14c5de83fe0c84210a515df04f1b83025c6e653a98161025dc9215bc4cda1fec",
       "decision": "reject",
       "first_seen": "2026-11-22T22:48:10.436308+09:00",
-      "last_seen": "2026-11-23T00:19:25.386690+09:00",
-      "reason": "국내 밭기반 정비 소규모 재해영향평가",
-      "source": "deepseek",
+      "last_seen": "2026-11-23T01:53:10.240735+09:00",
+      "reason": "[규칙 제외] 정비사업",
+      "source": "rule",
       "track": "order"
     },
     "order:R26DD20939814-0": {
-      "classification_signature": "03d743bd7b4babe024c6ad67d4c9e2d39c18e1fa754c4e99ff2ffc4ae29e7e78",
+      "classification_signature": "0bf14ff3fc506a363cb0eb3f1a218a62ce78904393f43b9a438a6709981c0456",
       "data": {
         "agrmntYn": "N",
         "atchFileExistnceYn": "N",
@@ -346826,13 +346826,13 @@
       "data_hash": "0c4eb475ea5469ee11e9770df35e309d0b5a4673eaf02e11ce698fd4e575dff2",
       "decision": "reject",
       "first_seen": "2026-11-22T22:48:10.436308+09:00",
-      "last_seen": "2026-11-23T00:19:25.386690+09:00",
-      "reason": "국내 정보통신시설 유지보수 용역",
-      "source": "deepseek",
+      "last_seen": "2026-11-23T01:53:10.240735+09:00",
+      "reason": "[규칙 제외] 유지보수",
+      "source": "rule",
       "track": "order"
     },
     "order:R26DD20939821-0": {
-      "classification_signature": "d7a29bfa1cd4c2444ff60c2c61ad8d036996dd00497ba89f45fcd3b04b93f1b2",
+      "classification_signature": "2c2da71eeac0ef479e3a3fdf1441af9729b7848f0c937ab8160e3fe9ee2d51e2",
       "data": {
         "agrmntYn": "N",
         "atchFileExistnceYn": "N",
@@ -346897,13 +346897,13 @@
       "data_hash": "12f35d0a7829e2db886b4916cee49f95b20853c40420fb0970cdf5fd8595adef",
       "decision": "reject",
       "first_seen": "2026-11-22T22:48:10.436308+09:00",
-      "last_seen": "2026-11-23T00:19:25.386690+09:00",
-      "reason": "국내 노점 정비·사후관리 용역",
+      "last_seen": "2026-11-23T01:53:10.240735+09:00",
+      "reason": "국내 노점 정비·사후관리 용역, ODA 무관",
       "source": "deepseek",
       "track": "order"
     },
     "order:R26DD20939843-0": {
-      "classification_signature": "a0212d5d6b58b3c063ce12ee7577b6ade3ce5a0e6df0a6706e71db2cb292bd9d",
+      "classification_signature": "f545101b834ee10a2e47fdf62db24884c102188016bfa95c25818ed6a80688f2",
       "data": {
         "agrmntYn": "N",
         "atchFileExistnceYn": "N",
@@ -346968,8 +346968,8 @@
       "data_hash": "9d2cf075bfe21fe938554a026553f7891ca7747a64804828657f9b197c2ed2c4",
       "decision": "reject",
       "first_seen": "2026-11-22T22:48:10.436308+09:00",
-      "last_seen": "2026-11-23T00:19:25.386690+09:00",
-      "reason": "국내 교육청 플랫폼 구축, 개도국 ODA 무관",
+      "last_seen": "2026-11-23T01:53:10.240735+09:00",
+      "reason": "국내 교육청 디지털 배지 플랫폼 구축, ODA 무관",
       "source": "deepseek",
       "track": "order"
     },

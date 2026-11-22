@@ -76,9 +76,6 @@ def build_embed(item: dict, review: bool = False) -> dict:
     url = item.get("orderPlanDtlUrl", "")
     if url:
         fields.append({"name": "링크", "value": str(url), "inline": False})
-    reason = item.get("_filter_reason")
-    if reason:
-        fields.append({"name": "필터링 근거", "value": str(reason), "inline": False})
 
     return {
         "title": f"[발주계획] {title}",
@@ -103,7 +100,7 @@ def main():
     webhook_url = os.environ["DISCORD_WEBHOOK_URL_ORDER_PLAN"].strip()
 
     now = datetime.now(KST)
-    start = now - timedelta(days=3)
+    start = now - timedelta(days=1)
 
     try:
         items = fetch_order_plan_list(api_key, to_dt_str(start), to_dt_str(now))
@@ -118,7 +115,7 @@ def main():
         )
         raise
 
-    print(f"최근 3일 용역 발주계획: {len(items)}건")
+    print(f"최근 24시간 용역 발주계획: {len(items)}건")
     candidates = []
 
     for item in items:
@@ -170,28 +167,29 @@ def main():
         else:
             ai_rejected += 1
 
+    alert_count = len(new_items) + len(changed_items)
     summary_text = (
-        f"- 조회기간: {start.strftime('%m월 %d일 %H:%M')} ~ "
-        f"{now.strftime('%m월 %d일 %H:%M')} (최근 3일)\n"
-        f"- 수집 상태: 정상\n"
-        f"- 용역 발주계획 전체: {len(items)}건\n"
-        f"- 관련 발주계획: {len(filtered)}건 "
-        f"(강제 포함 {forced_passed}건, AI 통과 {ai_passed}건)\n"
-        f"- 신규 알림: {len(new_items)}건\n"
-        f"- 변경 알림: {len(changed_items)}건\n"
-        f"- AI 분류 제외: {ai_rejected}건"
+        f"조회기간: {start.strftime('%m월 %d일 %H:%M')} ~ "
+        f"{now.strftime('%m월 %d일 %H:%M')} (최근 24시간)\n"
+        f"전체 용역 발주계획: {len(items)}건\n"
+        f"1차 후보: {len(candidates)}건\n"
+        f"2차 AI 필터링 통과: {ai_passed}건\n"
+        f"강제 포함: {forced_passed}건\n"
+        f"신규·변경 알림: {alert_count}건"
     )
     if system_review:
-        summary_text += f"\n- 처리 오류: {system_review}건"
+        summary_text += f"\n처리 오류: {system_review}건"
+    if alert_count:
+        summary_text += f"\n\n🚀 신규·변경 공고 {alert_count}건을 전송합니다."
+    else:
+        summary_text += "\n\n오늘은 새로 알릴 발주계획이 없습니다."
     send_discord(
         webhook_url,
-        content=f"ODA 발주계획 알림(일일 요약)\n{summary_text}",
+        content=f"📢 **ODA 발주계획 알림(일일 요약)**\n{summary_text}",
     )
 
-    send_items(webhook_url, new_items, "신규 ODA 발주계획")
-    send_items(webhook_url, changed_items, "변경된 ODA 발주계획")
-    if not any((new_items, changed_items)):
-        send_discord(webhook_url, content="오늘은 새로 알릴 발주계획이 없습니다.")
+    send_items(webhook_url, new_items, "🆕 신규 ODA 발주계획")
+    send_items(webhook_url, changed_items, "🔄 변경된 ODA 발주계획")
 
     history.save()
 
