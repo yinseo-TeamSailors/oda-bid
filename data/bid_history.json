@@ -252121,7 +252121,7 @@
       "data_hash": "7bc8fe96a91420a830aed71d97c17a13f686b4f2e1a8f9ec6d6c13010ca530b1",
       "decision": "reject",
       "first_seen": "2026-11-22T22:36:56.129088+09:00",
-      "last_seen": "2026-11-23T01:46:05.074915+09:00",
+      "last_seen": "2026-11-23T02:05:10.037012+09:00",
       "reason": "국내 지자체 데이터플랫폼 구축, ODA 무관",
       "source": "deepseek",
       "track": "bid"
@@ -346471,7 +346471,7 @@
       "data_hash": "fe761e10cf5a81cb0d3b8cf33573f24222a2943a3137c6412e4a472aa00b295f",
       "decision": "reject",
       "first_seen": "2026-11-22T22:48:10.436308+09:00",
-      "last_seen": "2026-11-23T01:53:10.240735+09:00",
+      "last_seen": "2026-11-23T02:05:15.199200+09:00",
       "reason": "[규칙 제외] 폐기물",
       "source": "rule",
       "track": "order"
@@ -346542,7 +346542,7 @@
       "data_hash": "68afd7ad8ea0ce80fec434abbcfd7b03d4bea7475d23012d05555f464c29ab97",
       "decision": "reject",
       "first_seen": "2026-11-22T22:48:10.436308+09:00",
-      "last_seen": "2026-11-23T01:53:10.240735+09:00",
+      "last_seen": "2026-11-23T02:05:15.199200+09:00",
       "reason": "국내 하수처리 GIS DB구축, ODA 무관",
       "source": "deepseek",
       "track": "order"
@@ -346613,7 +346613,7 @@
       "data_hash": "37a7533dda5f1ae24f7c199bbe4fd1e8700687049b0779d1856b7fda4b16a9c1",
       "decision": "reject",
       "first_seen": "2026-11-22T22:48:10.436308+09:00",
-      "last_seen": "2026-11-23T01:53:10.240735+09:00",
+      "last_seen": "2026-11-23T02:05:15.199200+09:00",
       "reason": "국내 상수도 GIS DB구축, 공사 성격 ODA 무관",
       "source": "deepseek",
       "track": "order"
@@ -346684,7 +346684,7 @@
       "data_hash": "5beebdd9ffe7ff25b460a476db711c5c012838d8fa043c94a341ce2f0fa488ef",
       "decision": "reject",
       "first_seen": "2026-11-22T22:48:10.436308+09:00",
-      "last_seen": "2026-11-23T01:53:10.240735+09:00",
+      "last_seen": "2026-11-23T02:05:15.199200+09:00",
       "reason": "[규칙 제외] 폐기물",
       "source": "rule",
       "track": "order"
@@ -346755,7 +346755,7 @@
       "data_hash": "14c5de83fe0c84210a515df04f1b83025c6e653a98161025dc9215bc4cda1fec",
       "decision": "reject",
       "first_seen": "2026-11-22T22:48:10.436308+09:00",
-      "last_seen": "2026-11-23T01:53:10.240735+09:00",
+      "last_seen": "2026-11-23T02:05:15.199200+09:00",
       "reason": "[규칙 제외] 정비사업",
       "source": "rule",
       "track": "order"
@@ -346826,7 +346826,7 @@
       "data_hash": "0c4eb475ea5469ee11e9770df35e309d0b5a4673eaf02e11ce698fd4e575dff2",
       "decision": "reject",
       "first_seen": "2026-11-22T22:48:10.436308+09:00",
-      "last_seen": "2026-11-23T01:53:10.240735+09:00",
+      "last_seen": "2026-11-23T02:05:15.199200+09:00",
       "reason": "[규칙 제외] 유지보수",
       "source": "rule",
       "track": "order"
@@ -346897,7 +346897,7 @@
       "data_hash": "12f35d0a7829e2db886b4916cee49f95b20853c40420fb0970cdf5fd8595adef",
       "decision": "reject",
       "first_seen": "2026-11-22T22:48:10.436308+09:00",
-      "last_seen": "2026-11-23T01:53:10.240735+09:00",
+      "last_seen": "2026-11-23T02:05:15.199200+09:00",
       "reason": "국내 노점 정비·사후관리 용역, ODA 무관",
       "source": "deepseek",
       "track": "order"
@@ -346968,7 +346968,7 @@
       "data_hash": "9d2cf075bfe21fe938554a026553f7891ca7747a64804828657f9b197c2ed2c4",
       "decision": "reject",
       "first_seen": "2026-11-22T22:48:10.436308+09:00",
-      "last_seen": "2026-11-23T01:53:10.240735+09:00",
+      "last_seen": "2026-11-23T02:05:15.199200+09:00",
       "reason": "국내 교육청 디지털 배지 플랫폼 구축, ODA 무관",
       "source": "deepseek",
       "track": "order"
