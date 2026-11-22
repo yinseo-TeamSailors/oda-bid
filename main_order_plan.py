@@ -100,10 +100,10 @@ def send_items(webhook_url: str, items: list[dict], label: str, review: bool = F
 
 def main():
     api_key = os.environ["G2B_API_KEY"].strip()
-    webhook_url = os.environ["DISCORD_WEBHOOK_URL"].strip()
+    webhook_url = os.environ["DISCORD_WEBHOOK_URL_ORDER_PLAN"].strip()
 
     now = datetime.now(KST)
-    start = now - timedelta(days=14)
+    start = now - timedelta(days=3)
 
     try:
         items = fetch_order_plan_list(api_key, to_dt_str(start), to_dt_str(now))
@@ -118,7 +118,7 @@ def main():
         )
         raise
 
-    print(f"최근 14일 용역 발주계획: {len(items)}건")
+    print(f"최근 3일 용역 발주계획: {len(items)}건")
     candidates = []
 
     for item in items:
@@ -172,7 +172,7 @@ def main():
 
     summary_text = (
         f"- 조회기간: {start.strftime('%m월 %d일 %H:%M')} ~ "
-        f"{now.strftime('%m월 %d일 %H:%M')} (최근 14일)\n"
+        f"{now.strftime('%m월 %d일 %H:%M')} (최근 3일)\n"
         f"- 수집 상태: 정상\n"
         f"- 용역 발주계획 전체: {len(items)}건\n"
         f"- 관련 발주계획: {len(filtered)}건 "

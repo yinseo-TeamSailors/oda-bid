@@ -4,7 +4,7 @@
 
 ## 처리 방식
 
-1. 나라장터에서 최근 14일 동안 게시된 용역 발주계획·사전규격공고·본공고를 수집하고 응답 코드·건수·페이지 누락을 검증합니다. 본공고 API의 조회기간 제한 때문에 2일 단위로 나누어 수집하고 경계 중복을 제거합니다.
+1. 나라장터에서 최근 3일 동안 게시된 용역 발주계획·사전규격공고·본공고를 수집하고 응답 코드·건수·페이지 누락을 검증합니다. 본공고 API의 조회기간 제한 때문에 2일 단위로 나누어 수집하고 경계 중복을 제거합니다.
 2. 입찰명에 KSP·경제발전경험이 포함된 공고는 무조건 포함합니다.
 3. KOICA·한국국제협력단, KOFIH·한국국제보건의료재단 공고는 무조건 포함합니다.
 4. 수출입은행 공고 중 EDCF·대외경제협력기금 관련 공고는 무조건 포함합니다.
@@ -55,7 +55,9 @@ JSON 문법뿐 아니라 공고 ID, 중복 결과, 누락 결과, 판별값도 �
 GitHub 저장소의 `Settings > Secrets and variables > Actions`에 다음을 등록합니다.
 
 - `G2B_API_KEY`: 나라장터 입찰공고·사전규격공고 API 키
-- `DISCORD_WEBHOOK_URL`: Discord 채널 웹후크
+- `DISCORD_WEBHOOK_URL_BID`: 본공고 Discord 채널 웹후크
+- `DISCORD_WEBHOOK_URL_PREBID`: 사전공고 Discord 채널 웹후크
+- `DISCORD_WEBHOOK_URL_ORDER_PLAN`: 발주계획 Discord 채널 웹후크
 - `DEEPSEEK_API_KEY`: DeepSeek API 키
 
 Gemini API 키는 더 이상 사용하지 않습니다.
