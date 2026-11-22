@@ -109,3 +109,17 @@ def fetch_prebid_list(api_key: str, start_dt: str, end_dt: str) -> list[dict]:
         "type": "json",
     }
     return fetch_all_pages(url, params)
+
+
+def fetch_order_plan_list(api_key: str, start_dt: str, end_dt: str) -> list[dict]:
+    url = "https://apis.data.go.kr/1230000/ao/OrderPlanSttusService/getOrderPlanSttusListServc"
+    params = {
+        "inqryDiv": 1,
+        "serviceKey": unquote(api_key.strip()),
+        "orderBgnYm": start_dt[:6],
+        "orderEndYm": end_dt[:6],
+        "inqryBgnDt": start_dt,
+        "inqryEndDt": end_dt,
+        "type": "json",
+    }
+    return fetch_all_pages(url, params)

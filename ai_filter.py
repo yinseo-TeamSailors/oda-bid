@@ -63,7 +63,7 @@ SYSTEM_PROMPT = """
 - 인도(보행로)처럼 국가명이 일반 명사로 사용된 사업
 
 기관명이나 국가명만으로 통과시키지 마라. 각 공고를 독립적으로 판별하라.
-제목과 수요기관만으로 수주 대상 여부가 불명확하면 review로 분류하라.
+제목·수요기관·추가 설명만으로 수주 대상 여부가 불명확하면 review로 분류하라.
 반드시 다음 JSON 객체 형식으로만 응답하고, 입력된 모든 공고를 정확히 한 번씩 반환하라.
 {"results":[{"id":"입력된 공고 ID","decision":"pass | reject | review","reason":"40자 이내 구체적 근거"}]}
 """.strip()
@@ -119,10 +119,12 @@ def _request_batch(batch: list[dict]) -> list[dict]:
             "DEEPSEEK_API_KEY가 설정되지 않았습니다.", retryable=False
         )
 
-    public_bids = [
-        {"id": item["id"], "title": item["title"], "org": item["org"]}
-        for item in batch
-    ]
+    public_bids = []
+    for item in batch:
+        public_item = {"id": item["id"], "title": item["title"], "org": item["org"]}
+        if item.get("context"):
+            public_item["context"] = item["context"]
+        public_bids.append(public_item)
     body = {
         "model": "deepseek-flash",
         "messages": [
