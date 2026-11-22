@@ -2,14 +2,11 @@ import os
 import time
 from datetime import datetime, timedelta, timezone
 
-from ai_filter import (
-    classify_candidates,
-    make_candidate_id,
-    mandatory_inclusion_reason,
-)
+from ai_filter import make_candidate_id, mandatory_inclusion_reason
 from discord_notify import send_discord
 from filters import keyword_match
 from g2b import BidCollectionError, fetch_order_plan_list
+from history import BidHistory
 
 KST = timezone(timedelta(hours=9))
 
@@ -31,11 +28,7 @@ def get_order_plan_org(item: dict) -> str:
 
 
 def get_order_plan_context(item: dict) -> str:
-    values = [
-        item.get("usgCntnts"),
-        item.get("specCntnts"),
-        item.get("rmrkCntnts"),
-    ]
+    values = [item.get("usgCntnts"), item.get("specCntnts"), item.get("rmrkCntnts")]
     return "\n".join(str(value) for value in values if value)[:2000]
 
 
@@ -51,6 +44,13 @@ def get_order_plan_search_text(item: dict) -> str:
         "totlmngInsttNm",
     )
     return " ".join(str(item.get(field, "")) for field in fields if item.get(field))
+
+
+def get_record_id(item: dict, title: str, org: str) -> str:
+    plan_no = item.get("orderPlanUntyNo")
+    if plan_no:
+        return f"order:{plan_no}-{item.get('orderPlanSno') or '1'}"
+    return f"order:{make_candidate_id(title, org, item.get('nticeDt'))}"
 
 
 def build_embed(item: dict, review: bool = False) -> dict:
@@ -103,7 +103,7 @@ def main():
     webhook_url = os.environ["DISCORD_WEBHOOK_URL"].strip()
 
     now = datetime.now(KST)
-    start = now - timedelta(days=1)
+    start = now - timedelta(days=14)
 
     try:
         items = fetch_order_plan_list(api_key, to_dt_str(start), to_dt_str(now))
@@ -118,35 +118,33 @@ def main():
         )
         raise
 
-    print(f"전체 용역 발주계획: {len(items)}건")
-    filtered = []
+    print(f"최근 14일 용역 발주계획: {len(items)}건")
     candidates = []
 
     for item in items:
         title = get_order_plan_title(item)
         org = get_order_plan_org(item)
-
         mandatory_reason = mandatory_inclusion_reason(title, org)
-        if mandatory_reason:
-            item["_filter_reason"] = mandatory_reason
-            filtered.append(item)
-            continue
-
-        if not keyword_match(get_order_plan_search_text(item)):
+        if not mandatory_reason and not keyword_match(get_order_plan_search_text(item)):
             continue
 
         candidates.append({
-            "id": make_candidate_id(
-                item.get("orderPlanUntyNo"), item.get("orderPlanSno"), title, org
-            ),
+            "id": get_record_id(item, title, org),
+            "track": "order",
             "title": title,
             "org": org,
             "context": get_order_plan_context(item),
+            "mandatory_reason": mandatory_reason,
             "item": item,
         })
 
-    results = classify_candidates(candidates)
+    history = BidHistory()
+    processed = history.process(candidates, now)
+    filtered = []
+    new_items = []
+    changed_items = []
     review_required = []
+    forced_passed = 0
     ai_passed = 0
     ai_rejected = 0
     model_review = 0
@@ -154,17 +152,21 @@ def main():
 
     for candidate in candidates:
         item = candidate["item"]
-        result = results.get(candidate["id"])
-        if result is None:
-            item["_filter_reason"] = "분류 결과가 없어 사람 검토가 필요합니다."
-            review_required.append(item)
-            system_review += 1
-            continue
-
+        record_id = candidate["id"]
+        result = processed.results[record_id]
         item["_filter_reason"] = result.reason
+
         if result.decision == "pass":
             filtered.append(item)
-            ai_passed += 1
+            if result.source == "mandatory":
+                forced_passed += 1
+            else:
+                ai_passed += 1
+
+            if record_id in processed.new_ids:
+                new_items.append(item)
+            elif record_id in processed.changed_ids:
+                changed_items.append(item)
         elif result.decision == "review":
             review_required.append(item)
             if result.source == "system":
@@ -176,11 +178,13 @@ def main():
 
     summary_text = (
         f"- 조회기간: {start.strftime('%m월 %d일 %H:%M')} ~ "
-        f"{now.strftime('%m월 %d일 %H:%M')}\n"
+        f"{now.strftime('%m월 %d일 %H:%M')} (최근 14일)\n"
         f"- 수집 상태: 정상\n"
         f"- 용역 발주계획 전체: {len(items)}건\n"
-        f"- 강제 포함(KOICA·KOFIH·EDCF): {len(filtered) - ai_passed}건\n"
-        f"- AI 분류 통과: {ai_passed}건\n"
+        f"- 관련 발주계획: {len(filtered)}건 "
+        f"(강제 포함 {forced_passed}건, AI 통과 {ai_passed}건)\n"
+        f"- 신규 알림: {len(new_items)}건\n"
+        f"- 변경 알림: {len(changed_items)}건\n"
         f"- AI 분류 제외: {ai_rejected}건\n"
         f"- 사람 검토 필요: {len(review_required)}건 "
         f"(모델 보류 {model_review}건, 시스템 오류 {system_review}건)"
@@ -190,12 +194,13 @@ def main():
         content=f"ODA 발주계획 알림(일일 요약)\n{summary_text}",
     )
 
-    if filtered:
-        send_items(webhook_url, filtered, "ODA 관련 발주계획")
-    if review_required:
-        send_items(webhook_url, review_required, "사람 검토 필요 발주계획", review=True)
-    if not filtered and not review_required:
-        send_discord(webhook_url, content="오늘은 조건에 맞는 발주계획이 없습니다.")
+    send_items(webhook_url, new_items, "신규 ODA 발주계획")
+    send_items(webhook_url, changed_items, "변경된 ODA 발주계획")
+    send_items(webhook_url, review_required, "사람 검토 필요 발주계획", review=True)
+    if not any((new_items, changed_items, review_required)):
+        send_discord(webhook_url, content="오늘은 새로 알릴 발주계획이 없습니다.")
+
+    history.save()
 
 
 if __name__ == "__main__":

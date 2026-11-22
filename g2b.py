@@ -1,4 +1,5 @@
 import time
+from datetime import datetime, timedelta
 from urllib.parse import unquote
 
 import requests
@@ -16,6 +17,13 @@ def _parse_response(response: requests.Response) -> tuple[list[dict], int]:
 
     response_body = payload.get("response")
     if not isinstance(response_body, dict):
+        error = payload.get("nkoneps.com.response.ResponseError", {})
+        header = error.get("header", {})
+        if header:
+            raise BidCollectionError(
+                f"나라장터 API 오류 {header.get('resultCode', '')}: "
+                f"{header.get('resultMsg', '알 수 없는 오류')}"
+            )
         raise BidCollectionError("나라장터 API 응답에 response가 없습니다.")
 
     header = response_body.get("header", {})
@@ -89,14 +97,34 @@ def fetch_all_pages(url: str, params: dict) -> list[dict]:
 
 def fetch_bid_list(api_key: str, start_dt: str, end_dt: str) -> list[dict]:
     url = "https://apis.data.go.kr/1230000/ad/BidPublicInfoService/getBidPblancListInfoServc"
-    params = {
-        "inqryDiv": 1,
-        "serviceKey": unquote(api_key.strip()),
-        "inqryBgnDt": start_dt,
-        "inqryEndDt": end_dt,
-        "type": "json",
-    }
-    return fetch_all_pages(url, params)
+    start = datetime.strptime(start_dt, "%Y%m%d%H%M")
+    end = datetime.strptime(end_dt, "%Y%m%d%H%M")
+    collected = {}
+
+    while start < end:
+        chunk_end = min(start + timedelta(days=2), end)
+        print(
+            f"본공고 조회 구간: {start.strftime('%Y%m%d%H%M')} ~ "
+            f"{chunk_end.strftime('%Y%m%d%H%M')}"
+        )
+        params = {
+            "inqryDiv": 1,
+            "serviceKey": unquote(api_key.strip()),
+            "inqryBgnDt": start.strftime("%Y%m%d%H%M"),
+            "inqryEndDt": chunk_end.strftime("%Y%m%d%H%M"),
+            "type": "json",
+        }
+        for item in fetch_all_pages(url, params):
+            key = (
+                item.get("bidNtceNo"),
+                item.get("bidNtceOrd"),
+                item.get("bidNtceNm"),
+                item.get("dminsttNm"),
+            )
+            collected[key] = item
+        start = chunk_end
+
+    return list(collected.values())
 
 
 def fetch_prebid_list(api_key: str, start_dt: str, end_dt: str) -> list[dict]:

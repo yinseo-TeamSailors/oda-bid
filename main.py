@@ -2,14 +2,11 @@ import os
 import time
 from datetime import datetime, timedelta, timezone
 
-from ai_filter import (
-    classify_candidates,
-    make_candidate_id,
-    mandatory_inclusion_reason,
-)
+from ai_filter import make_candidate_id, mandatory_inclusion_reason
 from discord_notify import send_discord
 from filters import keyword_match
 from g2b import BidCollectionError, fetch_bid_list
+from history import BidHistory, deadline_status
 
 KST = timezone(timedelta(hours=9))
 
@@ -18,10 +15,21 @@ def to_dt_str(dt: datetime) -> str:
     return dt.strftime("%Y%m%d%H%M")
 
 
+def get_record_id(item: dict, title: str, org: str) -> str:
+    notice_no = item.get("bidNtceNo")
+    if notice_no:
+        return f"bid:{notice_no}-{item.get('bidNtceOrd') or '000'}"
+    return f"bid:{make_candidate_id(title, org, item.get('bidNtceDt'))}"
+
+
+def get_deadline(item: dict):
+    return item.get("bidNtceEndDt") or item.get("bidQlfctRgstDt")
+
+
 def build_embed(item: dict, review: bool = False) -> dict:
     title = item.get("bidNtceNm", "(제목 없음)")
     org = item.get("dminsttNm", "-")
-    deadline = item.get("bidNtceEndDt") or item.get("bidQlfctRgstDt") or "-"
+    deadline = get_deadline(item) or "-"
 
     raw_budget = item.get("asignBdgtAmt")
     if raw_budget and str(raw_budget).isdigit():
@@ -65,12 +73,10 @@ def main():
     webhook_url = os.environ["DISCORD_WEBHOOK_URL"].strip()
 
     now = datetime.now(KST)
-    start = now - timedelta(days=1)
-    start_dt = to_dt_str(start)
-    end_dt = to_dt_str(now)
+    start = now - timedelta(days=14)
 
     try:
-        items = fetch_bid_list(api_key, start_dt, end_dt)
+        items = fetch_bid_list(api_key, to_dt_str(start), to_dt_str(now))
     except BidCollectionError as e:
         send_discord(
             webhook_url,
@@ -82,52 +88,61 @@ def main():
         )
         raise
 
-    print(f"전체 본공고: {len(items)}건")
-    filtered = []
+    print(f"최근 14일 본공고: {len(items)}건")
     candidates = []
 
     for item in items:
         title = str(item.get("bidNtceNm", ""))
         org = str(item.get("dminsttNm", ""))
-
         mandatory_reason = mandatory_inclusion_reason(title, org)
-        if mandatory_reason:
-            item["_filter_reason"] = mandatory_reason
-            filtered.append(item)
-            continue
-
-        if not keyword_match(f"{title} {org}"):
+        if not mandatory_reason and not keyword_match(f"{title} {org}"):
             continue
 
         candidates.append({
-            "id": make_candidate_id(
-                item.get("bidNtceNo"), item.get("bidNtceOrd"), title, org
-            ),
+            "id": get_record_id(item, title, org),
+            "track": "bid",
             "title": title,
             "org": org,
+            "mandatory_reason": mandatory_reason,
             "item": item,
         })
 
-    results = classify_candidates(candidates)
+    history = BidHistory()
+    processed = history.process(candidates, now)
+    filtered = []
+    new_items = []
+    changed_items = []
+    imminent_items = []
     review_required = []
+    forced_passed = 0
     ai_passed = 0
     ai_rejected = 0
     model_review = 0
     system_review = 0
+    expired = 0
 
     for candidate in candidates:
         item = candidate["item"]
-        result = results.get(candidate["id"])
-        if result is None:
-            item["_filter_reason"] = "분류 결과가 없어 사람 검토가 필요합니다."
-            review_required.append(item)
-            system_review += 1
-            continue
-
+        record_id = candidate["id"]
+        result = processed.results[record_id]
         item["_filter_reason"] = result.reason
+
         if result.decision == "pass":
+            if deadline_status(get_deadline(item), now) == "expired":
+                expired += 1
+                continue
             filtered.append(item)
-            ai_passed += 1
+            if result.source == "mandatory":
+                forced_passed += 1
+            else:
+                ai_passed += 1
+
+            if record_id in processed.new_ids:
+                new_items.append(item)
+            elif record_id in processed.changed_ids:
+                changed_items.append(item)
+            elif deadline_status(get_deadline(item), now) == "imminent":
+                imminent_items.append(item)
         elif result.decision == "review":
             review_required.append(item)
             if result.source == "system":
@@ -139,12 +154,16 @@ def main():
 
     summary_text = (
         f"- 조회기간: {start.strftime('%m월 %d일 %H:%M')} ~ "
-        f"{now.strftime('%m월 %d일 %H:%M')}\n"
+        f"{now.strftime('%m월 %d일 %H:%M')} (최근 14일)\n"
         f"- 수집 상태: 정상\n"
         f"- 전체 공고: {len(items)}건\n"
-        f"- 강제 포함(KOICA·KOFIH·EDCF): {len(filtered) - ai_passed}건\n"
-        f"- AI 분류 통과: {ai_passed}건\n"
+        f"- 관련 공고(마감 전): {len(filtered)}건 "
+        f"(강제 포함 {forced_passed}건, AI 통과 {ai_passed}건)\n"
+        f"- 신규 알림: {len(new_items)}건\n"
+        f"- 변경 알림: {len(changed_items)}건\n"
+        f"- 마감 임박: {len(imminent_items)}건\n"
         f"- AI 분류 제외: {ai_rejected}건\n"
+        f"- 마감 경과: {expired}건\n"
         f"- 사람 검토 필요: {len(review_required)}건 "
         f"(모델 보류 {model_review}건, 시스템 오류 {system_review}건)"
     )
@@ -153,12 +172,14 @@ def main():
         content=f"ODA 입찰공고 알림(일일 요약)\n{summary_text}",
     )
 
-    if filtered:
-        send_items(webhook_url, filtered, "ODA 관련 입찰공고")
-    if review_required:
-        send_items(webhook_url, review_required, "사람 검토 필요 공고", review=True)
-    if not filtered and not review_required:
-        send_discord(webhook_url, content="오늘은 조건에 맞는 입찰공고가 없습니다.")
+    send_items(webhook_url, new_items, "신규 ODA 입찰공고")
+    send_items(webhook_url, changed_items, "변경된 ODA 입찰공고")
+    send_items(webhook_url, imminent_items, "마감 임박 ODA 입찰공고")
+    send_items(webhook_url, review_required, "사람 검토 필요 공고", review=True)
+    if not any((new_items, changed_items, imminent_items, review_required)):
+        send_discord(webhook_url, content="오늘은 새로 알릴 입찰공고가 없습니다.")
+
+    history.save()
 
 
 if __name__ == "__main__":

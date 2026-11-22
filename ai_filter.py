@@ -12,6 +12,7 @@ import requests
 
 DEEPSEEK_ENDPOINT = "https://api.deepseek.com/chat/completions"
 ALLOWED_DECISIONS = {"pass", "reject", "review"}
+CLASSIFIER_VERSION = 1
 
 MANDATORY_PATTERNS = {
     "KOICA": re.compile(r"KOICA|한국국제협력단", re.IGNORECASE),
